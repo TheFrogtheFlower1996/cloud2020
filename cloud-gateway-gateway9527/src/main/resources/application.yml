@@ -1,0 +1,35 @@
+server:
+  port: 9527 #服务端口号
+
+spring:
+  application:
+    name: cloud-gateway #服务名称
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource  #数据源操作类型
+    driver-class-name: org.gjt.mm.mysql.Driver  #mysql驱动
+    url: jdbc:mysql://localhost:3306/cloud2022?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: 123456
+  cloud:
+    gateway: #gateway网关配置
+      routes:
+        - id: payment_routh                #路由的ID，没有固定规则但要求唯一，建议配合服务名
+          uri: http://localhost:8001       #匹配后提供服务的路由地址
+          predicates:
+            - Path=/payment/get/**         #断言，路径相匹配的进行路由
+
+        - id: payment_routh2
+          uri: http://localhost:8001
+          predicates:
+            - Path=/payment/lb/**
+
+eureka:
+  instance:
+    hostname: cloud-gateway-service
+  client:
+    register-with-eureka: true #默认为true，表示把自己注册进Eureka Server
+    fetchRegistry: true # 是否抓取已有的注册信息，默认为true。单节点无所谓，集群必须位置为true才能配合ribbon使用负载均衡
+    service-url:
+
+      defaultZone: http://localhost:7001/eureka #单机版
+#      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka #集群注册

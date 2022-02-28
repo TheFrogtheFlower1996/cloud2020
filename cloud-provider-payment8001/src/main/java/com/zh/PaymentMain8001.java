@@ -10,8 +10,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 
 @SpringBootApplication
-@EnableEurekaClient
-@EnableDiscoveryClient
+@EnableEurekaClient //启动Eureka客户端
+@EnableDiscoveryClient //启动服务发现
 public class PaymentMain8001 {
 
     public static void main(String[] args) {
