@@ -12,6 +12,7 @@
     <artifactId>cloud-gateway-gateway9527</artifactId>
 
     <dependencies>
+        <!--gateway 网关-->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>

@@ -792,21 +792,22 @@ public class PaymentHystrixMain8001 {
 
 # 网关 Gateway
 
-概述
-核心逻辑：路由转发+执行过滤器链
+* 概述
+
+核心逻辑：路由转发 + 执行过滤器链
 ~~~text
 Gateway 是在Spring生态系统之上构建的API网关服务，基于Spring5、Springboot2和Project Reactor等技术
 Gateway旨在提供一种简单而有效的方式来对API进行路由，以及提供一些强大的过滤器功能，例如：熔断、限流、重试等
 
 SpringCloud Gateway 作为SpringCloud生态系统中的网关，目标是替代Zuul，在SpringCloud2.0以上版本中，没有对新版本的Zuul2.0
-以上最新高性能版本进行集成，仍然还是使用的Zuul1.x非Reactor模式的老版本。而为了提升网关的性能，SpringCloud Gateway是基于WebFlu
+以上最新高性能版本进行集成，仍然还是使用的Zuul1.x非Reactor模式的老版本。而为了提升网关的性能，SpringCloud Gateway是基于WebFlux
 框架实现的，而WebFlux框架底层则使用了高性能的Reactor模式通信框架Netty
 
 SpringCloud Gateway的目标提供统一的路由方式且基于Filter链的方式提供了网关基本的功能，例如：安全，监控、指标和限流
 
 ~~~
 
-网关能干嘛？
+* 网关能干嘛？
 
 ~~~text
 反向代理
@@ -816,11 +817,11 @@ SpringCloud Gateway的目标提供统一的路由方式且基于Filter链的方�
 日志监控
 ~~~
 
-微服务架构中网关位置
+* 微服务架构中网关位置
 
 ![img_0.png](image/微服务网关.png)
 
-Gateway特性
+* Gateway特性
 
 ~~~text
 基于spring Framework 5，Project Reactor 和 Spring Boot 2.0进行构建
@@ -832,7 +833,7 @@ Gateway特性
 支持路径重写
 ~~~
 
-Gateway和Zuul的区别
+* Gateway和Zuul的区别
 ~~~text
 1.Zuul1.x是基于 阻塞I/O的API Gateway
 
@@ -844,7 +845,7 @@ Gateway和Zuul的区别
 4.Gateway建立在Spring Framework 5、Reactor和Springboot2.0之上，使用非阻塞API；还支持长连接（webSocket）
 ~~~
 
-为什么使用异步非阻塞模型？
+* 为什么使用非阻塞异步模型？
 ~~~text
 springCloud中所集成的Zuul版本，采用的是Tomcat容器，使用的是传统的Servlet IO处理模型
 
@@ -861,7 +862,7 @@ servlet是一个简单的网络IO模型，当请求进入servlet container时，
 所以zuul无法摆脱servlet模型的弊端
 ~~~
 
-WebFlux是典型的非阻塞异步框架
+* WebFlux是典型的非阻塞异步框架
 ~~~text
 传统的web框架，比如：struts2，springMVC都是基于Servlet API与Servlet容器基础之上运行的
 
@@ -873,26 +874,7 @@ Reactor来实现响应式流规范
 
 ~~~
 
-## Route 路由
-
-概述：路由是构建网关的基本模块，它由ID，目标URI，一系列的断言和过滤器组成，如果断言为true则匹配该路由
-
-
-## Predicate 断言
-
-概述：参考Java8的java.function.Predicate;开发人员可以匹配HTTP请求中的所有内容（例如请求头或请求参数），如果请求与断言相符匹配则进行路由
-
-
-## Filter 过滤器
-
-概述：指的是Spring框架中GatewayFilter的实例，没有过滤器，可以在请求被路由前或者之后对请求修改
-
-
-![img_0.png](image/gateway.png)
-
-
-
-gateway工作流程
+* gateway工作流程
 
 ![img_0.png](image/gateway工作流程.png)
 
@@ -905,9 +887,16 @@ Handler再通过指定的过滤器链来将请求发送到我们实际的服务�
 Filter在“pre”类型的过滤器可以做参数校验、流量控制、日志输出、协议转换等，在“post”类型的过滤器中可以做响应内容、响应头的修改，日志的输出，流量监控等有着非常重要的作用。
 ~~~
 
-gateway配置过程
+![img_0.png](image/gateway.png)
 
-1. yml文件配置gateway网关 对8001服务端接口进行包装
+
+## Route 路由
+
+概述：路由是构建网关的基本模块，它由ID，目标URI，一系列的断言和过滤器组成，如果断言为true则匹配该路由
+
+* gateway路由配置过程
+
+yml文件配置gateway网关 对8001服务端接口进行包装
 ~~~yaml
 spring:
    cloud:
@@ -926,18 +915,171 @@ spring:
 
 ![img_0.png](image/gateway配置.png)
 
+* 动态路由
+
+在yml文件开启 网关动态路由 uri地址改为注册中心的服务别名
+~~~yaml
+spring:
+   cloud:
+      gateway: #gateway网关配置
+         discovery:
+            locator:
+               enabled: true #开启从注册中心 动态创建路由 的功能，利用微服务别名进行路由
+         routes:
+            - id: payment_routh                #路由的ID，没有固定规则但要求唯一，建议配合服务名
+               #          uri: http://localhost:8001       #匹配后提供服务的路由地址
+              uri: lb://cloud-payment-service   #匹配后提供服务的别名
+              predicates:
+                 - Path=/payment/get/**         #断言，路径相匹配的进行路由
+            - id: payment_routh2
+               #          uri: http://localhost:8001
+              uri: lb://cloud-payment-service   #匹配后提供服务的别名
+              predicates:
+                 - Path=/payment/lb/**
+~~~
 
 
+## Predicate 断言
+
+概述：参考Java8的java.function.Predicate;开发人员可以匹配HTTP请求中的所有内容（例如请求头或请求参数），如果请求与断言相符匹配则进行路由
+
+~~~text
+Gateway将路由匹配作为Spring WebFlux HandlerMapping基础架构的一部分。
+Gateway包括许多内置的Route Predicate Factory(路由断言工厂)，所有这些Predicate都与HTTP请求的不同属性匹配，多个断言可以进行组合。
+~~~
+
+![img_0.png](image/predicate断言.png)
+
+~~~yaml
+spring:
+   cloud:
+      gateway: #gateway网关配置
+         discovery:
+            locator:
+               enabled: true #开启从注册中心 动态创建路由 的功能，利用微服务别名进行路由
+         routes:
+            - id: payment_routh                #路由的ID，没有固定规则但要求唯一，建议配合服务名
+               #          uri: http://localhost:8001       #匹配后提供服务的路由地址
+              uri: lb://cloud-payment-service   #匹配后提供服务的别名
+              predicates:
+                 - Path=/payment/get/**         #断言，路径相匹配的进行路由
+            - id: payment_routh2
+               #          uri: http://localhost:8001
+              uri: lb://cloud-payment-service   #匹配后提供服务的别名
+              predicates:
+                 - Path=/payment/lb/**
+                 - After=2022-03-01T11:12:29.724+08:00[Asia/Shanghai]
+                 - Cookie=username,zzyy
+                 - header=X-Request-Id, \d+ #请求头要有X-Request-Id属性，并且值为整数的正则表达式
+                 - Host=**.atguigu.com
+                 - Method=GET
+                 - Query=username, \d+ #要有参数名username并且值还要是整数才能路由
+~~~
+
+## Filter 过滤器
+
+概述：指的是Spring框架中GatewayFilter的实例，使用过滤器，可以在请求被路由前或后对请求进行修改
+
+配置全局网关过滤器
+~~~java
+/**
+ * GlobalGatewayFilter 全局网关过滤器
+ */
+@Component
+@Slf4j
+public class MyLogGatewayFilter implements GlobalFilter, Ordered {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String name = exchange.getRequest().getQueryParams().getFirst("name");
+        if (name == null){
+            log.info("非法用户，禁止入内");
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_ACCEPTABLE);
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
+    }
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+}
+~~~
 
 
+# SpringCloud Config Server
 
+* 概述
+~~~text
+SpringCloud Config 为微服务架构中的微服务提供集中化的外部配置支持，配置服务器为各个不同微服务应用的所有环境提供了一个中心化的外部配置
 
+SpringCloud Config 分为 服务端 和 客户端
 
+服务端也称为分配式配置中心，它是一个独立的微服务应用，用来连接配置服务器并为客户端提供获取配置信息，加密、解密信息等访问接口
 
+客户端则是通过指定的配置中心来管理应用资源，以及与业务相关的配置内容，并在启动的时候从配置中心获取和加载配置信息配置服务器默认采用git来存储配置信息，
+这样就有助于对环境配置进行版本管理，并且可以通过git客户端工具来方便的管理和访问配置内容
+~~~
 
+* config 配置中心可以做什么？
 
+~~~text
+集中管理配置文件
+不同环境不同配置，动态化的配置更新。分环境部署比如dev/test/prod/beta/release
+运行期间动态调整配置，不再需要在每个服务部署的机器上编写配置文件，服务会向配置中心统一拉取配置自己的信息
+当配置发送变化时，服务不需要重启即可感知到配置的变化并应用新的配置
+将配置信息以REST接口的形式暴露 ——> post、curl访问刷新即可
 
+~~~
 
+* config 配置中心 搭建
+
+在yml配置git仓库地址
+~~~yaml
+spring:
+  application:
+    name: cloud-config-server
+  cloud:
+    config:
+      server:
+        git:
+#          uri: git@github.com:TheFrogtheFlower1996/cloud-config.git #github上面的git仓库名字
+          uri: https://github.com/TheFrogtheFlower1996/cloud-config #github上面的git仓库名字
+          search-paths:
+            - cloud-config
+      label: master #读取分支
+# http://localhost:3344/master/config-dev.yml 访问地址
+~~~
+
+在启动类上面开启 @EnableConfigServer 配置中心注解
+~~~java
+@SpringBootApplication
+@EnableConfigServer //开启配置中心
+public class ConfigCenterMain3344 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigCenterMain3344.class,args);
+    }
+}
+~~~
+
+访问地址 http://localhost:3344/master/config-dev.yml 
+
+## bootstrap.yml
+
+* 概述
+
+~~~text
+application.yml 是用户级别的资源配置项
+bootstrap.yml 是系统级的，优先级更高
+
+SpringCloud会创建一个 “Bootstrap Context”，作为Spring应用的 Application Context 的上下问。
+初始化的时候，Bootstrap Context 负责从外部源加载配置属性并解析配置。这两个上下文共享一个从外部获取的 Environment.
+
+Bootstrap 属性有高优先级，默认情况下，它们不会被本地配置覆盖。Bootstrap Context 和 Application Context 有着不同的约定，
+所以新增一个 bootstrap.yml文件，保证Bootstrap Context 和 Application Context配置的分离
+
+要将Client模块下的application.yml文件改为bootstrap.yml，这时很关键的，
+因为bootstrap.yml是比application.yml先加载的。bootstrap.yml优先级高于application.yml
+~~~
 
 
 

@@ -30,7 +30,7 @@
             <version>${project.version}</version>
         </dependency>
         -->
-        <!-- eureka-client 向服务注册中心发送消息 -->
+        <!-- eureka-client 客户端 -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
