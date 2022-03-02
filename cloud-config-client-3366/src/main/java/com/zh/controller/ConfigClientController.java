@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RefreshScope //开启Config客户端动态刷新功能
 public class ConfigClientController {
 
+    @Value("${server.port}")
+    private String serverPort;
+
     @Value("${config.info}")
     private String configInfo;
 
     @GetMapping("/configInfo")
     public String getConfigInfo(){
 
-        return configInfo;
+        return configInfo + serverPort;
     }
 }

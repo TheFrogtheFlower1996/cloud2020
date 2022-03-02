@@ -8,15 +8,40 @@ spring:
     config:
       server:
         git:
-#          uri: git@github.com:TheFrogtheFlower1996/cloud-config.git #github上面的git仓库名字
+#  uri: git@github.com:TheFrogtheFlower1996/cloud-config.git #github上面的git仓库名字
           uri: https://github.com/TheFrogtheFlower1996/cloud-config #github上面的git仓库名字
           search-paths:
             - cloud-config
       label: master #读取分支
 # http://localhost:3344/master/config-dev.yml 访问地址
+  rabbitmq: #RabbitMQ 配置 15672是web管理页面的端口 5672是MQ访问的端口
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:7001/eureka #注册进 注册中心
+
+management: #rabbitmq配置，暴露bus刷新配置的端点
+  endpoints:
+    web:
+      exposure:
+        include: 'bus-refresh'
+
+
+
+
+
+
+
+
+
+
+
+
 

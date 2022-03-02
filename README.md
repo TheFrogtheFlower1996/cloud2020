@@ -1006,7 +1006,7 @@ public class MyLogGatewayFilter implements GlobalFilter, Ordered {
 ~~~
 
 
-# SpringCloud Config Server
+# 配置中心 Config Server 
 
 * 概述
 ~~~text
@@ -1033,7 +1033,7 @@ SpringCloud Config 分为 服务端 和 客户端
 
 * config 配置中心 搭建
 
-在yml配置git仓库地址
+application.yml文件 指定git仓库地址
 ~~~yaml
 spring:
   application:
@@ -1050,7 +1050,7 @@ spring:
 # http://localhost:3344/master/config-dev.yml 访问地址
 ~~~
 
-在启动类上面开启 @EnableConfigServer 配置中心注解
+在启动类上面开启 @EnableConfigServer 开启配置中心注解
 ~~~java
 @SpringBootApplication
 @EnableConfigServer //开启配置中心
@@ -1069,17 +1069,112 @@ public class ConfigCenterMain3344 {
 
 ~~~text
 application.yml 是用户级别的资源配置项
-bootstrap.yml 是系统级的，优先级更高
+bootstrap.yml   是系统级的，优先级更高
 
 SpringCloud会创建一个 “Bootstrap Context”，作为Spring应用的 Application Context 的上下问。
-初始化的时候，Bootstrap Context 负责从外部源加载配置属性并解析配置。这两个上下文共享一个从外部获取的 Environment.
+初始化的时候，Bootstrap Context 负责从外部源加载配置属性并解析配置。这两个上下文共享一个从外部获取的环境。
 
-Bootstrap 属性有高优先级，默认情况下，它们不会被本地配置覆盖。Bootstrap Context 和 Application Context 有着不同的约定，
+Bootstrap 属性具有高优先级，默认情况下，它们不会被本地配置覆盖。Bootstrap Context 和 Application Context 有着不同的约定，
 所以新增一个 bootstrap.yml文件，保证Bootstrap Context 和 Application Context配置的分离
 
-要将Client模块下的application.yml文件改为bootstrap.yml，这时很关键的，
+要将配置客户端Client模块下的application.yml文件改为bootstrap.yml，这时很关键的，
 因为bootstrap.yml是比application.yml先加载的。bootstrap.yml优先级高于application.yml
 ~~~
+
+bootstrap.yml 指定具体读取仓库中哪个文件
+
+~~~yaml
+server:
+  port: 3355
+
+spring:
+  application:
+    name: config-client
+  cloud:
+    config: #config client 客户端配置
+      label: master #分支
+      name: config #配置文件名称
+      profile: dev # 读取后缀名称
+      uri: http://localhost:3344 # 配置中心地址
+      #指定具体调用哪个文件 master分支上config-dev.yml的配置文件被读取http://config-3344.com:3344/master/config-dev.yml
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:7001/eureka
+~~~
+
+* Config客户端动态刷新问题
+
+问题：修改github配置文件，配置中心服务端自动刷新，配置客户端不能自动刷新
+
+1. yml暴露端口
+~~~yaml
+#暴露监控端口
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+~~~
+
+2. controller层添加 @RefreshScope //开启Config客户端动态刷新功能
+
+
+3. 还需要运维发送Post请求刷新Config客户端（3355）
+~~~text
+curl -X POST "http://localhost:3355/actuatr/refresh"
+~~~
+
+# Bus 消息总线
+
+* 概述
+~~~text
+自动刷新分布式配置中心
+
+SpringCloud Bus 是用来将分布式系统的节点与轻量级消息系统链接起来的框架，它整合了Java的事件处理机制和消息中间件的功能。
+SpringCloud Bus 目前支持RabbitMQ和Kafka
+~~~
+
+
+* Bus能干什么
+~~~text
+SpringCloudBus 能管理和传播分布式系统的消息，就像一个分布式执行器，可用于广播状态更新、事件推送等，也可以当作微服务间的通信通道
+~~~
+
+
+
+* 什么是总线
+~~~text
+在微服务架构的系统中，通常会使用 轻量级的消息代理 来构建一个 共用的消息主题，并让系统中所有的微服务实例都连接上来。由于
+该主题中产生的消息会被所有实例监听和消费，所以称它为消息总线。在总线上的各个实例，都可以方便的广播一些需要让其他连接在该主题上的实例都知道的消息。
+~~~
+
+* 基本原理
+~~~text
+ConfigClient实例都监听MQ中同一个topic（默认是SpringCloudBus）。当一个服务刷新数据的时候i，它会把这个消息放到Topic中，这样其他监听同一个
+Topic的服务就能得到通知，然后去更新自身的配置。
+
+~~~
+
+## bus全局广播
+
+1. 利用消息总线触发一个客户端/bus/refresh，而 传染式 刷新所有客户端配置
+
+![img_0.png](image/消息总线.png)
+
+2. 利用消息总线触发一个服务端（配置中心）ConfigServer的/bus/refresh端点，而 广播式 刷新所有客户端
+
+![img_0.png](image/bus广播方式.png)
+
+
+
+
+
+
+
+
+
 
 
 
