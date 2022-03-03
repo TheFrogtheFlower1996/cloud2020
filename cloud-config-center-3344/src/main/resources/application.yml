@@ -20,8 +20,6 @@ spring:
     username: guest
     password: guest
 
-
-
 eureka:
   client:
     service-url:
@@ -32,6 +30,7 @@ management: #rabbitmq配置，暴露bus刷新配置的端点
     web:
       exposure:
         include: 'bus-refresh'
+        # 访问地址 curl -X POST "http://localhost:3344/actuator/bus-refresh"
 
 
 

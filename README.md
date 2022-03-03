@@ -6,8 +6,7 @@
 
 ![img_0.png](image/服务.png)
 
-# cloud-provider-payment8001 (服务端 提供者)
-
+cloud-provider-payment8001 (服务端 提供者)
 
 微服务模块module创建过程
 
@@ -19,7 +18,7 @@
 5.写业务类
 ~~~
 
-## 热部署 devtools
+# 热部署 devtools
 
 1. 父POM中 插入devtools jar包，maven插件
 ~~~xml
@@ -63,9 +62,9 @@ spring:
 
 ![img_0.png](image/热部署2.png)
 
-# cloud-consumer-order80 (客户端 消费者)
+cloud-consumer-order80 (客户端 消费者)
 
-## RestTemplate
+# RestTemplate
 
 提供了多种便捷访问远程Http服务的方法，是一种简单便捷访问restful服务模板类，是Spring提供的用于访问Rest服务的 客户端 模板工具集
 
@@ -122,7 +121,7 @@ public RestTemplate getRestTemplate(){
    是一个java客户端，用于简化Eureka Server的交互，客户端同时也具备一个内置的、使用轮询（round-robin）负载算法的负载均衡器。在应用启动后，将会向Eureka Server发送心跳（默认周期为30秒）。如果Eureka Server在多个心跳周期内没有接收到某个节点的心跳，EurekaServer将会从服务注册表中把这个服务节点移除（默认90秒）
 
 
-# cloud-eureka-server7001 (注册中心)
+## cloud-eureka-server7001 (注册中心)
 
 配置流程
 
@@ -485,10 +484,10 @@ List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PAYMENT-SE
 
 * OpenFeign服务调用
 
+1. 在启动类中启动Feign注解 @EnableFeignClients
 ~~~java
-//1. 在启动类中启动Feign注解 @EnableFeignClients
 @SpringBootApplication
-@EnableFeignClients
+@EnableFeignClients //开启Feign客户端服务调用
 public class OrderFeignMain80 {
    public static void main(String[] args) {
       SpringApplication.run(OrderFeignMain80.class,args);
@@ -496,11 +495,12 @@ public class OrderFeignMain80 {
 }
 ~~~
 
+2. 在service层中添加 @FeignClient("CLOUD-PAYMENT-SERVICE") 注解，表明调用哪个服务接口
+3. 在controller层直接进行调用
 ~~~java
-//2. 在service层中添加 @FeignClient("CLOUD-PAYMENT-SERVICE") 注解，表明调用哪个服务接口
-//3. 在controller层直接进行调用
+
 @Component
-@FeignClient("CLOUD-PAYMENT-SERVICE")
+@FeignClient("CLOUD-PAYMENT-SERVICE") //注明Feign客户端调用哪个接口
 public interface PaymentFeignService {
 
    @GetMapping("/payment/get/{id}")
@@ -526,29 +526,25 @@ ribbon: #设置feign客户端超时时间（OpenFeign默认支持ribbon）
 
 日志级别
 ~~~text
-NONE:默认的,不显示任何日志;
-BASIC:仅记录请求方法、URL、响应状态码及执行时间;
-HEADERS:除了 BASIC 中定义的信息之外,还有请求和响应的头信息;
-FULL:除了HEADERS中定义的信息之外,还有请求和响应的正文及元数据。 
+NONE: 默认的,不显示任何日志;
+BASIC: 仅记录请求方法、URL、响应状态码及执行时间;
+HEADERS: 除了 BASIC 中定义的信息之外,还有请求和响应的头信息;
+FULL: 除了HEADERS中定义的信息之外,还有请求和响应的正文及元数据。 
 ~~~
 
 1. 添加配置类
 ~~~java
 // Feign 日志增强配置类
-
 @Configuration
 public class FeignConfig {
-
     @Bean
     Logger.Level feignLoggerLevel(){
-
-        return Logger.Level.FULL;
+        return Logger.Level.FULL;//全日志
     }
 }
-
 ~~~
 
-2. 配置yml
+2. 配置yml，声明监控哪个接口
 ~~~yaml
 logging:
   level:
@@ -560,10 +556,10 @@ logging:
 
 分布式面临的问题
 ~~~text
-Hystrix是一个用于处理分布式系统的延迟和容错的开源库，在分布式系统里，许多依赖会不可避免的调用失败，比如超时、异常等；
+Hystrix是一个用于处理分布式系统的 延迟 和 容错 的开源库，在分布式系统里，许多依赖会不可避免的调用失败，比如超时、异常等；
 Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服务失败，避免级联故障，以提高分布式系统的弹性。
 
-“短路器” 本身是一种开关装置，当某个服务单元发生故障后，通过断路器的故障监控（类似熔断保险丝），向调用方返回一个符合预期的、可处理的备选响应（FallBack),
+“断路器” 本身是一种开关装置，当某个服务单元发生故障后，通过断路器的 故障监控（类似熔断保险丝），向调用方返回一个符合预期的、可处理的备选响应（FallBack 服务降级),
 而不是长时间的等待或者抛出调用方无法处理的异常，这样就保证了服务调用方的线程不会被长时间、不必要的占用，从而避免了故障在分布式系统中蔓延，乃至“雪崩”
 ~~~
 
@@ -578,21 +574,46 @@ Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服�
 线程池/信号量打满也会导致服务降级
 ~~~
 
-* 如何服务降级 提供者 服务端
-~~~text
-1. 主启动类启动 @EnableCircuitBreaker 启动断路器 注解
+* 如何服务降级 服务端（提供者）
 
-2. 在业务类上面激活 @HystrixCommand(fallbackMethod = "服务降级方法",commandProperties = {
-            @HystrixProperty(name="execution.isolation.thread.timeoutInMilliseconds",value = "3000")
-    })
+1. 主启动类启动 @EnableCircuitBreaker 启动断路器注解
+~~~java
+@SpringBootApplication
+@EnableDiscoveryClient
+@EnableCircuitBreaker //启动断路器注解，用于服务降级
+public class PaymentHystrixMain8001 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentHystrixMain8001.class,args);
+    }
+}
+~~~
+2. 在Service层上启动 @HystrixCommand Hystrix命令注解，一旦调用服务方法失败并抛出了错误信息，会自动调用注解标注的fallbackMethod服务降级指定方法；这里设置服务超时时间为3秒
 
-一旦调用服务方法失败并抛出了错误信息，会自动调用 @HystrixCommand 注解标注的服务降级指定方法；这里设置服务超时时间为3秒
+~~~java
+    //------------------服务降级
+@HystrixCommand(fallbackMethod = "paymentInfo_timeoutHandler", commandProperties = {
+        @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")})
+public String paymentInfo_timeout(Integer id) {
+        try {
+        TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+        e.printStackTrace();
+        }
+//        int i = 10/0;
+        return "线程池：" + Thread.currentThread().getName() + "paymentInfo_timeout，id:" + id + "\t" + "请求超时，出错啦";
+        }
+
+public String paymentInfo_timeoutHandler(Integer id) {
+        return "线程池：" + Thread.currentThread().getName() + " paymentInfo_timeoutHandler，id: " + id + "\t" + "请求超时，系统繁忙或运行错误，请稍后再试。";
+        }
+
+
+
 ~~~
 
-* 如何服务降级 消费者 客户端
-
+* 如何服务降级 客户端（消费者）
 ~~~text
-1. 主启动类启动 @EnableHystrix 豪猪 注解
+1. 主启动类启动 @EnableHystrix 豪猪注解
 
 2. yml文件中配置hystrix启动 feign.hystrix.enabled: true
 
@@ -602,9 +623,9 @@ Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服�
 ![img_0.png](image/hystrix客户端配置.png)
 
 
-服务降级，客户端去调用服务端，碰上服务端宕机或关闭；需要为feign客户端定义的接口添加一个服务降级处理类即可实现解耦合
+服务降级，客户端去调用服务端，碰上服务端宕机或关闭；需要为feign客户端定义的接口添加一个 服务降级处理类 即可实现解耦合
 
-1. service接口添加 @FeignClient注解，value表示调用哪个服务，fallback表示服务降级后调用哪个类
+1. Service层添加 @FeignClient注解，value表示调用哪个服务，fallback表示服务降级后调用哪个类
 ~~~java
 @Component
 @FeignClient(value = "CLOUD-PROVIDER-HYSTRIX-PAYMENT",fallback = PaymentFallbackService.class)
@@ -1142,8 +1163,6 @@ SpringCloud Bus 目前支持RabbitMQ和Kafka
 SpringCloudBus 能管理和传播分布式系统的消息，就像一个分布式执行器，可用于广播状态更新、事件推送等，也可以当作微服务间的通信通道
 ~~~
 
-
-
 * 什么是总线
 ~~~text
 在微服务架构的系统中，通常会使用 轻量级的消息代理 来构建一个 共用的消息主题，并让系统中所有的微服务实例都连接上来。由于
@@ -1152,10 +1171,11 @@ SpringCloudBus 能管理和传播分布式系统的消息，就像一个分布�
 
 * 基本原理
 ~~~text
-ConfigClient实例都监听MQ中同一个topic（默认是SpringCloudBus）。当一个服务刷新数据的时候i，它会把这个消息放到Topic中，这样其他监听同一个
+ConfigClient实例都监听MQ中同一个topic（默认是SpringCloudBus）。当一个服务刷新数据的时候，它会把这个消息放到Topic中，这样其他监听同一个
 Topic的服务就能得到通知，然后去更新自身的配置。
-
 ~~~
+
+![img_0.png](image/topic.png)
 
 ## bus全局广播
 
@@ -1166,6 +1186,201 @@ Topic的服务就能得到通知，然后去更新自身的配置。
 2. 利用消息总线触发一个服务端（配置中心）ConfigServer的/bus/refresh端点，而 广播式 刷新所有客户端
 
 ![img_0.png](image/bus广播方式.png)
+
+
+* bus全局广播配置过程
+
+1. 下载安装RabbitMQ
+
+2. 在ConfigServer3344 yml配置RabbitMQ地址，暴露bus全局广播刷新配置的端点
+~~~yaml
+spring:
+   rabbitmq: #RabbitMQ 配置 15672是web管理页面的端口 5672是MQ访问的端口
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+
+management: #rabbitmq配置，暴露bus刷新配置的端点
+   endpoints:
+      web:
+         exposure:
+            include: 'bus-refresh'
+~~~
+
+3. 在ConfigClient3355和3366 bootstrap.yml文件中配置RabbitMQ地址和 暴露监控端点
+~~~yaml
+string:
+  rabbitmq: #RabbitMQ 配置
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+#暴露监控端口
+management:
+   endpoints:
+      web:
+         exposure:
+            include: "*"
+~~~
+
+4. 运行命令行 访问地址 curl -X POST "http://localhost:3344/actuator/bus-refresh" 访问ConfigServer3344配置中心，执行刷新，全局广播
+
+## 定点通知
+
+指定具体某一个实例生效而不是全部
+
+~~~text
+公式：http:/localhost:ConfigServer端口号/actuator/bus-refresh/{destination}
+
+/bus/refresh 请求不再发送到具体的的服务实例上，而是发给ConfigServer并通过destination参数类指定需要更新配置的服务或实例
+
+例：只通知3355：curl -X POST "http://localhost:3344/actuator/bus-refresh/config-client:3355"
+
+~~~
+
+# 消息驱动 Spring Cloud Stream
+
+* 概述
+~~~text
+屏蔽底层消息中间件的差异，降低切换成本，统一消息的编程模型
+
+官方定义 Spring Cloud Stream 是一个 构建消息驱动 的微服务框架
+
+应用程序通过 inputs 或 outputs 来与SpringCloudStream中的binder对象交互。
+通过我们配置来binding（绑定），而SpringCloudStream的binder对象负责与消息中间件交互。
+所以，我们只需要搞清楚如何与SpringCloudStream交互就可以方便使用消息驱动的方式。
+
+通过使用Spring Integration 来连接消息代理中间件以实现消息事件驱动。
+SpringCloudStream为一些供应商的消息中间件产品提供了个性化的自动化配置实现，引用了发布-订阅、消费组、分区的三个核心概念
+
+目前仅支持RabbitMQ、Kafka
+~~~
+
+* 标准MQ
+~~~text
+生产者/消费者之间靠消息媒介传递信息内容 —— Message
+消息必须走特定的通道 —— 消息通道 MessageChannel
+消息通道里的消息如何被消费，谁负责转发 —— 消息通道MessageChannel的子接口 SubscribableChannel，由MessageHandler消息处理器订阅
+~~~
+
+* stream 如何统一底层差异
+~~~text
+在没有绑定器这个概念的情况下，我们SpringBoot应用要直接与消息中间件进行信息交互的时候，由于各消息中间件构建的初衷不同，实现细节上有较大差异性
+通过定义绑定器作为中间件，完美的实现了 应用程序与消息中间件细节之间的隔离 
+通过向应用程序 暴露统一的Channel通道，使得应用程序不需要再考虑各种不同的消息中间件实现。
+
+通过定义绑定器Binder作为中间层，实现了应用程序与消息中间件细节之间的隔离
+~~~
+
+![img_0.png](image/stream.png)
+
+![img_0.png](image/stream流程.png)
+
+* stream 流程
+~~~text
+1. 绑定器 Binder，方便的连接中间件，屏蔽差异
+2. 通道 Channel，是队列Queue的一种抽象，在消息通讯系统中就是实现存储和转发的媒介，通过Channel对队列进行配置
+3. 消息输出和输入 Source和Sink，简单的可理解为参照对象是SpringCloudStream自身，从Stream发布消息就是输出，接收消息就是输入
+~~~
+
+* stream常用注解
+
+![img_0.png](image/stream常用注解.png)
+
+
+## 信息驱动 生产者
+
+cloud-stream-rabbitmq-provider8801 信息驱动 生产者
+
+1. 添加stream-rabbit依赖
+~~~xml
+<!--stream-rabbit-->
+<dependency>
+   <groupId>org.springframework.cloud</groupId>
+   <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
+</dependency>
+~~~
+
+2. 
+~~~yaml
+spring:
+   cloud:
+      stream:
+         binders: #在此配置要绑定的rabbitmq的服务信息
+            defaultRabbit: #表示定义的名称，用于binding整合
+               type: rabbit #消息组件类型
+               environment: #设置rabbitmq的相关环境配置
+                  spring:
+                     rabbitmq:
+                        host: localhost
+                        port: 5672
+                        username: guest
+                        password: guest
+         bindings: #服务的整合处理
+            output: #通道名称
+               destination: studyExchange #表示要使用的Exchange名称定义
+               content-type: application/json #设置消息类型，本次为json，文本则设置”text/plain“
+               binder: defaultRabbit #设置要绑定的消息服务的具体设置
+   
+eureka:
+   instance:
+      instance-id: send-8801.com #服务别名
+      prefer-ip-address: true #访问地址可以显示IP地址
+      lease-expiration-duration-in-seconds: 2 #Eureka服务端在收到最后一次心跳后等待时间上限，默认90秒，超时剔除服务
+      lease-renewal-interval-in-seconds: 5 #Eureka客户端向服务端发送心跳时间间隔，默认30秒
+~~~
+
+3. 定义信息接口抽象和send()方法以及实现类，实现类开启 @EnableBinding(Source.class) 表示定义消息推送管道
+~~~java
+//信息接口
+public interface IMessageProvider {
+    public String send();
+}
+
+//实现类
+@EnableBinding(Source.class) //定义消息推送管道
+public class MessageProviderImpl implements IMessageProvider {
+
+   @Resource
+   private MessageChannel output; //消息发送管道
+
+   @Override
+   public String send() {
+      String s = UUID.randomUUID().toString();
+      output.send(MessageBuilder.withPayload(s).build());
+      System.out.println("serial: "+s);
+      return null;
+   }
+}
+~~~
+
+4. controller层做调用
+~~~java
+@RestController
+public class SendMessageController {
+
+    @Resource
+    private IMessageProvider messageProvider;
+
+    @GetMapping("/sendMessage")
+    public String send(){
+        return messageProvider.send();
+    }
+}
+~~~
+
+
+
+
+
+
+
+
+
+
+
 
 
 
