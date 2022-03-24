@@ -17,15 +17,15 @@ import java.util.concurrent.TimeUnit;
 public class PaymentService {
 
     public String paymentInfo_ok(Integer id) {
-        return "线程池：" + Thread.currentThread().getName() + "paymentInfo_ok，id:" + id + "\t" + "完成";
+        return "服务端 线程池：" + Thread.currentThread().getName() + "paymentInfo_ok，id:" + id + "\t" + "完成";
     }
 
-    //------------------服务降级
+    //------------------   服务降级
     @HystrixCommand(fallbackMethod = "paymentInfo_timeoutHandler", commandProperties = {
             @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")})
     public String paymentInfo_timeout(Integer id) {
         try {
-            TimeUnit.SECONDS.sleep(5);
+            TimeUnit.SECONDS.sleep(1);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -34,17 +34,20 @@ public class PaymentService {
     }
 
     public String paymentInfo_timeoutHandler(Integer id) {
-        return "线程池：" + Thread.currentThread().getName() + " paymentInfo_timeoutHandler，id: " + id + "\t" + "请求超时，系统繁忙或运行错误，请稍后再试。";
+        return "服务端 线程池：" + Thread.currentThread().getName() + " paymentInfo_timeoutHandler，id: " + id + "\t" + "请求超时，系统繁忙或运行错误，请稍后再试。";
     }
 
-    // ---------------------- 服务熔断
+    // ------------------  服务熔断
     @HystrixCommand(fallbackMethod = "paymentCircuitBreaker_fallback",commandProperties = {
             @HystrixProperty(name="circuitBreaker.enabled",value = "true"), //开启熔断器
             @HystrixProperty(name="circuitBreaker.requestVolumeThreshold",value = "10"), //请求次数
-            @HystrixProperty(name="circuitBreaker.sleepWindowInMilliseconds",value = "10000"), //时间窗口 10秒
-            @HystrixProperty(name="circuitBreaker.errorThresholdPercentage",value = "10"), //失败率达到多少熔断跳闸
+            @HystrixProperty(name="circuitBreaker.sleepWindowInMilliseconds",value = "1000"), //时间窗口 10秒
+            @HystrixProperty(name="circuitBreaker.errorThresholdPercentage",value = "5"), //失败率达到多少熔断跳闸
     })
     public String paymentCircuitBreaker(Long id) {
+        System.out.println("id="+id);
+
+//        int i =10/0;
 
         if (id < 0) {
             throw new RuntimeException("id不能为负数");
@@ -54,8 +57,7 @@ public class PaymentService {
     }
 
     public String paymentCircuitBreaker_fallback(Long id) {
-
-        return "id不能为负数 id= " + id;
+        return " 熔断降级方法 paymentCircuitBreaker_fallback id= " + id;
     }
 
 }

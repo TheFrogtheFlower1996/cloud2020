@@ -22,10 +22,10 @@ import javax.annotation.Resource;
 @Slf4j
 public class OrderController {
 
-    //    public static final String PAYMENT_URL = "http://localhost:8002";
+//        public static final String PAYMENT_URL = "http://localhost:8002";
     public static final String PAYMENT_URL = "http://CLOUD-PAYMENT-SERVICE";
 
-    //    @Autowired
+    //@Autowired
     @Resource
     private RestTemplate restTemplate;
 

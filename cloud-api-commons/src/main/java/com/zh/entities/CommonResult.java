@@ -6,13 +6,13 @@ import lombok.NoArgsConstructor;
 
 /**
  * @author zh
- * @version 1.0
  * @date 2022/1/24 20:18
+ * @说明：统一返回结果集
  */
 @Data
 @AllArgsConstructor //全参
 @NoArgsConstructor  //无参
-public class CommonResult<T> { //统一返回结果集
+public class CommonResult<T> {
 
     private Integer code;
     private String message;

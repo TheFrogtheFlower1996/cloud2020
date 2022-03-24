@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author zh
- * @version 1.0
  * @date 2022/2/24 11:01
  * 配置Ribbon负载均衡规则
  */

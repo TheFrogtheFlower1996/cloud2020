@@ -1,14 +1,29 @@
-# 版本说明
+# SpringCloud
+
+* 版本说明
 
 ![img_0.png](image/版本.png)
 
-# SpringCloud服务架构
+* SpringCloud服务架构
 
 ![img_0.png](image/服务.png)
 
-cloud-provider-payment8001 (服务端 提供者)
+* 服务名称解释
+~~~text
+cloud-provider-payment8001/8002     服务端/提供者
+cloud-eureka-server-7001/7002       服务注册中心
+cloud-consumer-order80              客户端/消费者
 
-微服务模块module创建过程
+cloud-consumer-feign-order80 客户端 用feign做服务接口绑定器
+
+cloud-provider-hystrix-payment8001 服务端 用hystrix做 服务熔断降级 
+cloud-consumer-feign-hystrix-order80 客户端 用hystrix做服务熔断降级
+cloud-consumer-hystrix-dashboard9001 hystrix可视化配置
+
+
+~~~
+
+* 微服务模块module创建过程
 
 ~~~java
 1.创建module
@@ -18,7 +33,7 @@ cloud-provider-payment8001 (服务端 提供者)
 5.写业务类
 ~~~
 
-# devtools 热部署 
+## devtools 热部署 
 
 1. 父POM中 插入devtools jar包，maven插件
 ~~~xml
@@ -64,7 +79,7 @@ spring:
 
 cloud-consumer-order80 (客户端 消费者)
 
-# RestTemplate
+## RestTemplate
 
 提供了多种便捷访问远程Http服务的方法，是一种简单便捷访问restful服务模板类，是Spring提供的用于访问Rest服务的 客户端 模板工具集
 
@@ -76,7 +91,6 @@ REST请求地址，请求参数，HTTP响应转换被转换成的对象类型
 
 @Bean 将组件注册到spring的IOC容器中
 ~~~java
-
 @Bean
 public RestTemplate getRestTemplate(){
 
@@ -95,33 +109,37 @@ public RestTemplate getRestTemplate(){
 
 # Eureka 注册中心
 
-1. 服务治理
+* 服务治理
+~~~text
+SpringCloud封装了Netflix(奈飞)公司开发的Eureka模块来实现服务治理
 
-    SpringCloud封装了Netflix(奈飞)公司开发的Eureka模块来实现服务治理
+在传统的rpc远程调用框架中，管理每个服务与服务之间依赖关系比较复杂，管理比较复杂，
+所以需要使用服务治理，管理服务与服务之间的依赖关系，可以实现服务调用、负载均衡、容错等，实现服务发现与注册
+~~~
+* 服务注册
+~~~text
+Eureka采用了CS的设计架构，EurekaServer 作为服务注册功能的服务器，他是服务注册中心。而系统中的其他服务，使用Eureka的客户端连接到 EurekaServer并维持心跳连接，这样系统的维护人员就可以通过EurekaServer来监控系统中各个微服务是否正常运行
 
-    在传统的rpc远程调用框架中，管理每个服务与服务之间依赖关系比较复杂，管理比较复杂，所以需要使用服务治理，管理服务于服务之间的依赖关系，可以实现服务调用、负载均衡、容错等，实现服务发现与注册
-
-
-2. 服务注册
-    
-    Eureka采用了CS的设计架构，Eureka Server 作为服务注册功能的服务器，他是服务注册中心。而系统中的其他服务，使用Eureka的客户端连接到 EurekaServer并维持心跳连接，这样系统的维护人员就可以通过EurekaServer来监控系统中各个微服务是否正常运行
-
-    在服务注册与发现中，有一个注册中心。当服务器启动时，会把当前自己服务器的信息比如服务地址通讯地址等以别名方式注册到注册中心。另一方（消费者|提供者），以该别名的方式去注册中心上获取到实际的服务通讯地址，然后再实现本地RPC调用RPC远程调用框架核心设计思想：在于注册中心，因为使用注册中心管理每个服务与服务间的依赖关系（服务治理概念）。在任何RPC远程框架下，都会有一个注册中心（存放服务地址、接口地址）
-
+在服务注册与发现中，有一个注册中心。当服务器启动时，会把当前自己服务器的信息比如服务地址通讯地址等以别名方式注册到注册中心。
+另一方（消费者|提供者），以该别名的方式去注册中心上获取到实际的服务通讯地址，然后再实现本地RPC调用RPC远程调用框架核心设计思想：在于注册中心，因为使用注册中心管理每个服务与服务间的依赖关系（服务治理概念）。在任何RPC远程框架下，都会有一个注册中心（存放服务地址、接口地址）
+~~~
 
 ![img_0.png](image/Eureka注册中心.png)
 
 
-3. Eureka 包含的两个组件 Eureka Server 和 Eureka Client
+* Eureka 包含的两个组件 EurekaServer 和 EurekaClient
 
-* Eureka Server 注册中心
+~~~text
+Eureka Server 注册中心
    各个微服务节点通过配置启动后，会在EurekaServer中进行注册，这样EurekaServer中的服务注册表中将会存储所有可用服务节点的信息，服务节点的信息可以在界面中直观看到
   
-* Eureka Client 注册服务
-   是一个java客户端，用于简化Eureka Server的交互，客户端同时也具备一个内置的、使用轮询（round-robin）负载算法的负载均衡器。在应用启动后，将会向Eureka Server发送心跳（默认周期为30秒）。如果Eureka Server在多个心跳周期内没有接收到某个节点的心跳，EurekaServer将会从服务注册表中把这个服务节点移除（默认90秒）
+Eureka Client 注册服务
+   是一个java客户端，用于简化Eureka Server的交互，客户端同时也具备一个内置的、使用轮询（round-robin）负载算法的负载均衡器。
+   在应用启动后，将会向Eureka Server发送心跳（默认周期为30秒）。如果Eureka Server在多个心跳周期内没有接收到某个节点的心跳，EurekaServer将会从服务注册表中把这个服务节点移除（默认90秒）
 
+~~~
 
-## cloud-eureka-server7001 (注册中心)
+* cloud-eureka-server7001 (注册中心)
 
 配置流程
 
@@ -192,13 +210,13 @@ public class PaymentMain8001 {
 }
 ~~~
 
-# Eureka集群原理
+## Eureka集群原理
 
 ![img_0.png](image/Eureka集群.png)
 
 ## 注册中心 集群 
 
-Eureka集群步骤：修改yml配置，让注册中心 相互注册，相互守望
+* Eureka集群步骤：修改yml配置，让注册中心 相互注册，相互守望
 ~~~yaml
 server:
   port: 7001
@@ -211,12 +229,13 @@ eureka:
     fetch-registry: false #false表示自己就是注册中心，职责是维护服务实例，不需要检索服务
     service-url:
       defaultZone: http://eureka7002.com:7002/eureka/ #设置与Eureka Server交互的地址查询服务和注册服务
-
 ~~~
 
 ## 服务端（提供者） 集群
 
+~~~text
 cloud-provider-payment8001，cloud-provider-payment8002作为服务提供者，对外有相同的服务名称：cloud-payment-service；所以消费者调用时，需要用到负载均衡
+~~~
 
 1. 在Controller层定义的 提供者URL 统一改成 服务提供者名称
 ~~~java
@@ -224,7 +243,7 @@ public static final String PAYMENT_URL = "http://CLOUD-PAYMENT-SERVICE";
 ~~~
 
 2. 在 RestTemplate 工具类中添加负载均衡注解 @LoadBalanced
-~~~java  
+~~~ java  
 @Configuration
 public class ApplicationContextConfig {
 
@@ -244,15 +263,14 @@ Eureka集群简略图示
 
 ## Discovery 服务发现 
 
-功能：对于注册进Eureka的微服务，可以通过服务发现来获得该服务的信息
+* 功能：对于注册进Eureka的微服务，可以通过服务发现来获得该服务的信息
 
-1. 启动类添加注解 @EnableDiscoveryClient 开启发现客户端
+1. 启动类开启 @EnableDiscoveryClient 发现客户端注解
 ~~~java
 @SpringBootApplication
 @EnableEurekaClient //启动Eureka客户端
 @EnableDiscoveryClient //启动服务发现
 public class PaymentMain8001 {
-
    public static void main(String[] args) {
       SpringApplication.run(PaymentMain8001.class,args);
    }
@@ -290,7 +308,7 @@ public class PaymentController {
 
 ## Eureka 自我保护机制
 
-概述：某时刻某一个微服务不可用了，Eureka不会立刻清理，依旧会对该服务信息进行保存
+* 概述：某时刻某一个微服务不可用了，Eureka不会立刻清理，依旧会对该服务信息进行保存
 
 * 为什么会产生Eureka自我保护机制？
 ~~~text
@@ -327,7 +345,7 @@ eureka:
       lease-renewal-interval-in-seconds: 1 #Eureka客户端向服务端发送心跳时间间隔，默认30秒
 ~~~
 
-# Consul 注册中心
+## Consul 注册中心
 
 
 ~~~text
@@ -340,53 +358,53 @@ eureka:
 ~~~
 
 # CAP
+
 ~~~text
+CAP的核心理论：一个分布式不可能同时很好的满足一致性、可用性、分区容错性；因此，根据CAP原理将NoSQL数据库分为满足CA原则，满足CP原则，满足AP原则三类
+
 A 可用性 Availability 
-
 C 一致性 Consistency
-
 P 分区容错性 Partition tolerance 
+
+CA 单点集群，满足一致性，可用性的系统，通常在可扩展性不强
+CP 满足一致性，分区容错性的系统，通常性能不是太高
+AP 满足可用，分区容错性的系统，通常对一致性要求低
 
 AP(Eureka)、CP(ZK、Consul)
 ~~~
 
-CAP的核心理论：一个分布式不可能同时很好的满足一致性、可用性、分区容错性；因此，根据CAP原理将NoSQL数据库分为满足CA原则，满足CP原则，满足AP原则三类
-~~~text
-CA 单点集群，满足一致性，可用性的系统，通常在可扩展性不强
-
-CP 满足一致性，分区容错性的系统，通常性能不是太高
-
-AP 满足可用，分区容错性的系统，通常对一致性要求低
-~~~
 
 ## AP架构
-
+~~~text
 当网络分区出现后，为了保证可用性，系统B可以返回旧值，保证系统的可用性。结论：违背了C（一致性）的要求，只满足可用性和分区容错性，即AP
-
+~~~
 ![img_0.png](image/AP(Eureka).png)
 
 ## CP架构
-
+~~~text
 当网络分区出现后，为了保证一致性，就必须拒绝访问，否则无法保证一致性；结论：违背了A(可用性)的要求，只满足一致性和分区容错性，即CP
-
+~~~
 ![img_0.png](image/CP(Consul).png)
 
 
-# Ribbon 
+# Ribbon 客户端负载均衡
 
-概述：Spring Cloud Ribbon 是基于Netflix Ribbon实现的一套客户端 负载均衡的工具
+* 概述
 ~~~text
+Spring Cloud Ribbon 是基于Netflix Ribbon实现的一套客户端 负载均衡 的工具
+
 简单的说，Ribbon是Netflix发布的开源项目，主要功能是提供客户端软件负载均衡算法和服务调用。Ribbon客户端组件提供一系列完善的配置选项如连接超时，重试等。
 简单的说就是配置文件中列出Load Balancer(LB)后面所有的机器，Ribbon会自动帮你基于某种规则（如轮询，随机连接等）去连接机器，我们很容易使用Ribbon实现自定义的负载均衡算法。
 ~~~
 
 ## Load Balance 负载均衡
 
-* Ribbon本地负载均衡客户端 Nginx服务端负载均衡 区别
+* Ribbon Nginx 负载均衡区别
 
 ~~~text
-Nginx是对服务器负载均衡，客户端把所有请求都交给nginx，然后由nginx实现转发请求。即负载均衡是由服务端实现的。
-Ribbon本地负载均衡，在调用微服务接口时，会在注册中心上获取注册信息服务列表之后缓存到JVM本地，从而在本地实现PRC远程服务调用。
+Nginx是客户端所有请求统一交给nginx，由nginx进行实现负载均衡请求转发，属于服务器负载均衡。既请求有nginx服务器端进行转发。
+
+Ribbon是从Eureka注册中心服务器端上获取服务注册信息列表，缓存到本地，让后在本地实现轮训负载均衡策略。既在客户端实现负载均衡。
 ~~~
 
 * Ribbon在工作时分为两步
@@ -419,12 +437,12 @@ AvailabilityFilteringRule：先过滤掉故障实例,再选择并发较小的实
 ZoneAvoidanceRule：默认规则,复合判断server所在区域的性能和server的可用性选择服务器
 ~~~
 
-* 替换规则
+* 自定义负载均衡规则
 
-1. 配置自定义规则工具类
-
+1. 配置自定义规则工具类 MySelfRule.class
+~~~text
 注意：自定义配置类不能放在@ComponentScan所扫描到的当前包及以下，所以配置包要和主启动类包同级
-
+~~~
 ![img_0.png](image/IRule工具类.png)
 
 ~~~java
@@ -437,7 +455,20 @@ public class MySelfRule {
 }
 ~~~
 
-2. 主启动类添加 @RibbonClient 注解
+2. 在RestTemplate配置类中 让接口访问允许负载均衡
+~~~java
+@Configuration
+public class ApplicationContextConfig {
+
+    @Bean
+    @LoadBalanced //让RestTemplate具有负载均衡的能力
+    public RestTemplate getRestTemplate(){
+        return new RestTemplate();
+    }
+}
+~~~
+
+3. 主启动类启动 @RibbonClient 注解，注明自定义负载均衡服务名称和自定义规则类
 ~~~java
 @RibbonClient(name = "CLOUD-PAYMENT-SERVICE",configuration = MySelfRule.class) //表示该服务使用自定义负载均衡规则
 public class OrderMain80 {
@@ -448,8 +479,9 @@ public class OrderMain80 {
 ~~~
 
 * 轮询算法解析
-
+~~~text
 负载均衡算法：rest接口第几次请求数 % 服务器集群总数 = 实际调用服务器位置下标
+~~~
 
 ~~~text
 每次服务器重启后rest接口计数从1开始
@@ -472,17 +504,16 @@ List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PAYMENT-SE
 # OpenFeign 服务接口绑定器
 
 * Feign能干什么？ 服务接口绑定器
-
-
-前面在使用 Ribbon+RestTemplate，利用RestTemplate对http请求的封装处理，形成了一套模板化的调用方法。但实际开发中，由于对服务依赖的调用可能不止一处，**往往一个接口会被多处调用，所以通常都会针对每个微服务自行封装一些客户端类来包装这些依赖服务的调用。**
-所以，Feign在此基础上做了进一步封装，由他来帮助我们定义和实现依赖服务接口的定义。在Feign的实现下，**我们只需创建一个接口并使用注解的方式来配置他（以前Dao接口上面标注Mapper注解，现在是一个微服务接口上面标注一个Feign注解即可）**，即可完成对服务提供方的接口绑定，
+~~~text
+前面在使用 Ribbon+RestTemplate，利用RestTemplate对http请求的封装处理，形成了一套模板化的调用方法。但实际开发中，由于对服务依赖的调用可能不止一处，往往一个接口会被多处调用，所以通常都会针对每个微服务自行封装一些客户端类来包装这些依赖服务的调用。
+所以，Feign在此基础上做了进一步封装，由他来帮助我们定义和实现依赖服务接口的定义。在Feign的实现下，我们只需创建一个接口并使用注解的方式来配置他（以前Dao接口上面标注Mapper注解，现在是一个微服务接口上面标注一个Feign注解即可），即可完成对服务提供方的接口绑定，
 简化了使用Spring Cloud Ribbon时，自动封装服务调用客户端的开发量
-
+~~~
 * Feign集成Ribbon
-
+~~~text
 利用Ribbon维护了Payment的服务列表信息，并且通过轮询实现了客户端的负载均衡。而与Ribbon不同的是，通过Feign只需要定义服务绑定接口且以声明式的方法，优雅而简单的实现服务调用
-
-* OpenFeign服务调用
+~~~
+## 服务调用
 
 1. 在启动类中启动Feign注解 @EnableFeignClients
 ~~~java
@@ -495,7 +526,20 @@ public class OrderFeignMain80 {
 }
 ~~~
 
-2. 在service层中添加 @FeignClient("CLOUD-PAYMENT-SERVICE") 注解，表明调用哪个服务接口
+2. 在service层启动 @FeignClient 注解，注明调用哪个服务，里面注明需要调用的接口
+~~~java
+@Component
+@FeignClient("CLOUD-PAYMENT-SERVICE")
+public interface PaymentFeignService {
+
+    @GetMapping("/payment/get/{id}")
+    CommonResult<Payment> getPaymentById(@PathVariable("id") Long id);
+
+    @GetMapping("/payment/feign/timeout")
+    public String paymentFeignTimeout();
+}
+~~~
+
 3. 在controller层直接进行调用
 ~~~java
 
@@ -511,9 +555,11 @@ public interface PaymentFeignService {
 }
 ~~~
 
-## OpenFeign 超时控制
+## 超时控制
 
-默认Feign客户端只等待1秒，但是服务器处理需要超过1秒时，就会导致Feign客户端报错；需要在客户端配置一个超时控制。
+~~~text
+默认Feign客户端只等待1秒，但是服务器处理需要超过1秒时，就会导致Feign客户端报错；需要在客户端配置一个超时控制
+~~~
 
 yml文件中添加超时控制
 ~~~yaml
@@ -522,7 +568,7 @@ ribbon: #设置feign客户端超时时间（OpenFeign默认支持ribbon）
   ConnectTimeout: 5000 #指的是建立连接后从服务器读取可用资源的时间
 ~~~
 
-## OpenFeign 日志增强
+## 日志增强
 
 日志级别
 ~~~text
@@ -552,9 +598,9 @@ logging:
     com.zh.service.PaymentFeignService: debug
 ~~~
 
-# Hystrix 豪猪
+# Hystrix 降级熔断
 
-分布式面临的问题
+* 分布式面临的问题
 ~~~text
 Hystrix是一个用于处理分布式系统的 延迟 和 容错 的开源库，在分布式系统里，许多依赖会不可避免的调用失败，比如超时、异常等；
 Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服务失败，避免级联故障，以提高分布式系统的弹性。
@@ -574,7 +620,7 @@ Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服�
 线程池/信号量打满也会导致服务降级
 ~~~
 
-* 如何服务降级 服务端（提供者）
+## 服务端降级
 
 1. 主启动类开启 @EnableCircuitBreaker 断路器注解
 ~~~java
@@ -588,8 +634,7 @@ public class PaymentHystrixMain8001 {
 }
 ~~~
 
-2. 在Service层开启 @HystrixCommand Hystrix命令注解，一旦调用服务方法失败并抛出了错误信息，会自动调用fallbackMethod的指定服务降级方法，这里设置服务超时时间为5秒
-
+2. 在Service层开启 @HystrixCommand 注解，一旦调用服务方法失败，会自动调用fallbackMethod的降级方法，服务超时时间为5秒
 ~~~java
     //------------------服务降级
 @HystrixCommand(fallbackMethod = "paymentInfo_timeoutHandler", commandProperties = {
@@ -609,7 +654,7 @@ public String paymentInfo_timeoutHandler(Integer id){
         }
 ~~~
 
-* 如何服务降级 客户端（消费者）
+## 客户端降级
 ~~~text
 1. 主启动类开启 @EnableHystrix 注解
 
@@ -620,10 +665,13 @@ public String paymentInfo_timeoutHandler(Integer id){
 
 ![img_0.png](image/hystrix客户端配置.png)
 
+* 为客户端降级类解耦合
 
-服务降级，客户端去调用服务端，碰上服务端宕机或关闭；需要为feign客户端定义的接口添加一个 服务降级处理类 即可实现解耦合
+~~~text
+服务降级，客户端调用服务端，碰上服务端宕机或关闭；需要为feign客户端定义的接口添加一个 服务降级处理类 即可实现解耦合
+~~~
 
-1. Service层添加 @FeignClient注解，value表示调用哪个服务，fallback表示服务降级后调用哪个类
+1. service层接口开启 @FeignClient，value注明调用哪个服务，fallback注明服务降级后调用哪个类
 ~~~java
 @Component
 @FeignClient(value = "CLOUD-PROVIDER-HYSTRIX-PAYMENT",fallback = PaymentFallbackService.class)
@@ -648,31 +696,38 @@ public class PaymentFallbackService implements PaymentHystrixService{
 }
 ~~~
 
+* 自定义全局降级类
+~~~java
+@RestController
+@DefaultProperties(defaultFallback = "payment_Global_FallbackMethod") //默认Fallback服务降级方法
+public class PaymentHystrixController {
+    ....
+    public String payment_Global_FallbackMethod() {
+        return "消费者80 全局Fallback 服务降级";
+    }
+}
+~~~
+
 
 ## 服务熔断 
 ~~~text
 达到最大访问量，直接拒绝访问，然后调用服务降级并返回友好提示；
-三步：服务降级 -> 熔断 -> 恢复调用链路
+三步：服务降级 -> 熔断 -> 试图恢复调用链路
 ~~~
 
-* 熔断机制概述
+* 熔断机制
 ~~~text
-熔断机制是应对雪崩效应的一种微服务链路保护机制。当扇出链路的某个微服务出错不可用或者响应时间太长时，
-会进行服务的降级，进而熔断该节点微服务的调用，快速返回错误的响应信息。
-当检测到该节点微服务调用响应正常后，恢复调用链路。
-
-在SpringCloud框架里，熔断机制通过Hystrix实现。Hystrix会监控微服务间调用的状况，当失败的调用到一定阈值，
-缺省是5秒内20次调用失败，就会启动熔断机制。熔断机制的注解是 @HystrixCommand
+熔断机制是应对雪崩效应的一种微服务链路保护机制。当扇出链路的某个微服务出错不可用或者响应时间太长时，会进行服务的降级，进而熔断该节点微服务的调用，快速返回错误的响应信息。
 ~~~
 
-服务端熔断service层，开启 @HystrixCommand 注解
+1. 服务端熔断service层，开启 @HystrixCommand 注解
 ~~~java
     // ---------------------- 服务熔断
     @HystrixCommand(fallbackMethod = "paymentCircuitBreaker_fallback",commandProperties = {
             @HystrixProperty(name="circuitBreaker.enabled",value = "true"), //开启熔断器
             @HystrixProperty(name="circuitBreaker.requestVolumeThreshold",value = "10"), //请求次数
             @HystrixProperty(name="circuitBreaker.sleepWindowInMilliseconds",value = "10000"), //时间窗口 10秒
-            @HystrixProperty(name="circuitBreaker.errorThresholdPercentage",value = "10"), //失败率达到多少熔断跳闸
+            @HystrixProperty(name="circuitBreaker.errorThresholdPercentage",value = "10"), //失败率 达到多少熔断跳闸
     })
     public String paymentCircuitBreaker(Long id) {
 
@@ -694,13 +749,11 @@ public class PaymentFallbackService implements PaymentHystrixService{
 
 * 熔断类型
 ~~~text
-
 关闭（closed）  熔断关闭不会对服务进行熔断
 
-打开（open）  请求不再调用当前服务，内部设置时钟一般为MTTR（平均故障处理时间，一般为5秒），当打开时长达到所设时钟则进入半熔断状态
+打开（open）    请求不再调用当前服务，内部设置时钟一般为MTTR（5秒时间窗口），当打开时长达到所设时钟则进入半熔断状态
 
 半熔断（half open） 部分请求根据规则调用当前服务，如果请求成功且符合规则则认为当前服务恢复正常，关闭熔断
-
 ~~~
 
 * 涉及到断路器的三个参数：时间窗口、请求总数、错误百分比
@@ -711,10 +764,9 @@ public class PaymentFallbackService implements PaymentHystrixService{
             即使所有的请求都超时或失败，断路器都不会打开
 
 错误百分比： 当请求总数在时间窗口内超过阈值，比如发生了30次调用，如果在这30次调用中，有15次发生超时异常，也就是超过50%的错误百分比，在默认设定50%的阈值情况下，就会把断路器打开。
-
 ~~~
 
-* 熔断开启关闭条件
+* 熔断关闭条件
 ~~~text
 1.当满足默认时间窗口内达到一定的请求次数（默认10秒内超过20次请求次数）
 2.当失败率达到一定的时候（默认10秒内超过50%的请求失败）
@@ -726,26 +778,25 @@ public class PaymentFallbackService implements PaymentHystrixService{
 
 * 断路器打开后
 ~~~text
-1. 再有请求调用时，不会调用主逻辑而是服务降级fallback，通过断路器，实现自动发现错误并将主逻辑切换为降级逻辑，减少响应延迟的效果
+再有请求调用时，不会调用主逻辑而是服务降级fallback，通过断路器实现自动发现错误并将主逻辑切换为降级逻辑，减少响应延迟的效果
 
-2.原来的主逻辑该如果恢复？
+自动恢复
 
-对于这个问题，hystrix也为我们实现了 自动恢复 功能
-
-当断路器打开，对主逻辑进行熔断之后，hystrix会启动一个 休眠时间窗，在这个时间窗内，降级逻辑临时的成为主逻辑
+当断路器打开，对主逻辑进行熔断之后，hystrix会启动一个 休眠窗口，在这个时间窗口内，降级逻辑临时的成为主逻辑
 当休眠时间窗到期，断路器进入半开状态，释放一次请求到原来的主逻辑上，如果此次请求正常返回，那么断路器关闭，主逻辑恢复，如果请求还有问题，断路器继续打开，休眠重新计算
 ~~~
 
 ## 服务限流
-秒杀或高并发等，严禁拥挤，排队有序进行
+* 秒杀或高并发等，严禁拥挤，排队有序进行
 
 * 降级容错解决
-
+~~~text
 1. 超时导致服务器变慢 ——> 超时不再等待
 
 2. 出错（宕机或者程序出问题） ——> 出错要兜底
+~~~
 
-解决办法
+* 解决办法
 ~~~text
 对方服务（8001）超时、宕机，调用者（80）不能一直卡死等待，必须服务降级
 对方服务（8001）ok，调用者（80）自己出故障或有自我要求（自己的等待时间小于服务提供者），自己处理降级
@@ -753,14 +804,14 @@ public class PaymentFallbackService implements PaymentHystrixService{
 
 ## hystrix图形化
 
-概述
+* 概述
 ~~~text
 除了隔离依赖服务的调用以外，hystrix还提供了准实时的调用监控（hystrix Dashboard）,hystrix会持续的记录所有通过hystrix发起的请求执行信息，
 并以统计报表的和图表的形式展示给客户，包括每秒执行多少请求多少次成功，多少次失败等。Netflix通过hystrix-metrics-event-stream项目实现监控。
 SpringCloud也提供了Hystrix Dashboard的整合，对监控内容转化为可视化界面。
 ~~~
 
-添加hystrix dashboard 可视化工具依赖
+* 添加hystrix dashboard 可视化工具依赖
 ~~~xml
 <!--hystrix dashboard 可视化工具-->
 <dependency>
@@ -769,7 +820,7 @@ SpringCloud也提供了Hystrix Dashboard的整合，对监控内容转化为可�
 </dependency>
 ~~~
 
-开启 hystrix Dashboard 可视化工具注解 @EnableHystrixDashboard
+* 启动类开启 hystrix Dashboard 可视化工具注解 @EnableHystrixDashboard
 ~~~java
 @SpringBootApplication
 @EnableHystrixDashboard //开启 hystrix Dashboard 可视化注解
@@ -780,7 +831,7 @@ public class HystrixBashboardMain9001 {
 }
 ~~~
 
-在需要可视化监控的服务启动项中 注入 为服务监控配置
+* 在需要可视化监控的服务启动项中 注入 为服务监控配置
 ~~~java
 @SpringBootApplication
 @EnableDiscoveryClient
@@ -804,13 +855,12 @@ public class PaymentHystrixMain8001 {
 }
 ~~~
 
-启动地址：http://localhost:8001/hystrix.stream
+* 启动地址：http://localhost:8001/hystrix.stream
 
-# Gateway 网关 
+# Gateway 网关（路由转发 + 执行过滤器链）
 
 * 概述
 
-核心逻辑 路由转发 + 执行过滤器链
 ~~~text
 Gateway 是在Spring生态系统之上构建的API网关服务，基于Spring5、Springboot2和Project Reactor等技术
 Gateway旨在提供一种简单而有效的方式来对API进行路由，以及提供一些强大的过滤器功能，例如：熔断、限流、重试等
@@ -890,7 +940,7 @@ Reactor来实现响应式流规范
 
 ~~~
 
-* gateway工作流程
+* Gateway工作流程
 
 ![img_0.png](image/gateway工作流程.png)
 
